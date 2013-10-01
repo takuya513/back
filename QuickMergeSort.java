@@ -39,8 +39,8 @@ public class QuickMergeSort<E extends Comparable> extends QuickSort<E> {
 	public void sort(E[] array){
 		this.array = array;
 		int k = array.length / threadsNum,pos_1 = 0, pos = 0,pos2 = k - 1;
-		int prevusSave = -1;
-		int pos_2 = 0;
+		int lastLengthOfRestSection = -1;  //-1というのは初期値として設定している
+		int specialPos = 0;
 		final List<Callable<Object>> workers = new ArrayList<Callable<Object>>(threadsNum);
 		while(pos2 < array.length){
 			workers.add(Executors.callable(new QuickSortWorker(pos,pos2)));
@@ -51,7 +51,7 @@ public class QuickMergeSort<E extends Comparable> extends QuickSort<E> {
 		//最後の区分だけ特別に処理する
 		//p("pos",pos,"k",k);
 		workers.add(Executors.callable(new QuickSortWorker(pos,array.length-1)));
-		pos_2 = pos;
+		specialPos = pos;
 		//ここからマージ処理を行う
 		try {
 			executor.invokeAll(workers);
@@ -60,7 +60,7 @@ public class QuickMergeSort<E extends Comparable> extends QuickSort<E> {
 			while(true){
 				workers.clear();
 				pos = 0; pos2 = k * i - 1 ;
-				
+
 				if(pos2 > array.length - 1){
 					//p("sard if");
 					executor.shutdown();
@@ -72,7 +72,7 @@ public class QuickMergeSort<E extends Comparable> extends QuickSort<E> {
 					//MyArrayUtil.print(array);
 					break;
 				}
-				
+
 				while(true){
 					//System.out.println("************ "+(i*k)+"************");
 					//System.out.println("pos : "+pos+"  pos2 : "+pos2);
@@ -86,38 +86,38 @@ public class QuickMergeSort<E extends Comparable> extends QuickSort<E> {
 					pos_1 = pos;
 					//p("before pos2",pos2);
 					//p("before pos2",pos2,"i",i);
-					
+
 					pos2 = pos2 + k*i;
 					//p("after pos2",pos2);
-					
-					
+
+
 //					p("(array.length - pos)",(array.length - pos),"k * (i / 2))",k * (i / 2));
 					if(pos2 >= array.length){
-						if((array.length - pos) == prevusSave)	{
+						if((array.length - pos) == lastLengthOfRestSection)	{
 							//p("second if");
 							break;  //注 繰り返しソートの防止,確認済み
 						}
 
-						
+
 						//p("pos_2",pos_2,"pos",pos);
-						if(pos_2 == 0){  //最初のあまり分のとき
+						if(specialPos == 0){  //最初のあまり分のとき
 						//if(i == 2){
 							//p("first plex");
 							workers.add(Executors.callable(new MergeSortWorker(pos,array.length - 1)));
-							pos_2 = pos;
+							specialPos = pos;
 						}else{
 							//p("i > 2 plex");
-						workers.add(Executors.callable(new MergeSortWorker(pos,pos_2-1,array.length - 1)));
-						pos_2 = pos;
+						workers.add(Executors.callable(new MergeSortWorker(pos,specialPos-1,array.length - 1)));
+						specialPos = pos;
 						}
-						prevusSave = array.length - pos;
+						lastLengthOfRestSection = array.length - pos;
 						break;
 					}
 				}
 				i = i * 2;
 				executor.invokeAll(workers);
 
-				
+
 			}
 
 		} catch (InterruptedException e) {
@@ -148,7 +148,7 @@ public class QuickMergeSort<E extends Comparable> extends QuickSort<E> {
 			while(i <= mid && j <= right) {
 //				MyArrayUtil.print(array, i);
 //				MyArrayUtil.print(array, j);
-				
+
 				if(array[i].compareTo(array[j]) < 0){
 					buff.add(array[i]); i++;
 				}else{
