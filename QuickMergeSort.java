@@ -31,7 +31,7 @@ public class QuickMergeSort<E extends Comparable> extends QuickSort<E> {
 		int lastLengthOfRestSection = -1;  //繰り返し防止を確認するための変数
 		int pivotOfRest = 0; //マージするときに余った部分の仕切り
 		final List<Callable<Object>> workers = new ArrayList<Callable<Object>>(threadsNum);
-		
+
 		while(pos2 < arrayLength){
 			workers.add(Executors.callable(new QuickSortWorker(pos,pos2)));
 			pos = pos2 + 1;
