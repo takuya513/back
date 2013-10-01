@@ -1,6 +1,7 @@
 package sort;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -9,70 +10,120 @@ import java.util.concurrent.Executors;
 
 import quickSort.QuickSort;
 import tools.MyArrayUtil;
+import tools.MyData;
+import tools.MyInteger;
 
 public class QuickMergeSort<E extends Comparable> extends QuickSort<E> {
 	ExecutorService executor;
 	int threadsNum;
 
 	public QuickMergeSort(){
-		threadsNum = Runtime.getRuntime().availableProcessors();
+		//threadsNum = Runtime.getRuntime().availableProcessors();
+		threadsNum = 8;
 		executor = Executors.newCachedThreadPool();
 
 	}
 
+	public void p(String st,int i,String st2 ,int j){
+		System.out.print("            "+st+" : "+i);
+		System.out.println("      "+st2+" : "+j);
+	}
+	public void p(String st,int i){
+		System.out.println("            "+st+" : "+i);
+	}
+
+	public void p(String st){
+		System.out.println("            "+st+":");
+	}
+
 	public void sort(E[] array){
 		this.array = array;
-		int pos = 0;
-		int pos2 = array.length / threadsNum;
+		int k = array.length / threadsNum,pos_1 = 0, pos = 0,pos2 = k - 1;
+		int prevusSave = -1;
+		int pos_2 = 0;
 		final List<Callable<Object>> workers = new ArrayList<Callable<Object>>(threadsNum);
-		for(int i = 2;i <= threadsNum;i++){
+		while(pos2 < array.length){
 			workers.add(Executors.callable(new QuickSortWorker(pos,pos2)));
 			pos = pos2 + 1;
-			pos2 =  i * pos2;
+			pos2 =  k + pos2;
 		}
 
 		//最後の区分だけ特別に処理する
-		//System.out.println("left : "+tmpNoName2+"  right  :"+(array.length));
+		//p("pos",pos,"k",k);
 		workers.add(Executors.callable(new QuickSortWorker(pos,array.length-1)));
-
+		pos_2 = pos;
+		//ここからマージ処理を行う
 		try {
 			executor.invokeAll(workers);
-		} catch (InterruptedException e) {
-			// TODO 自動生成された catch ブロック
-			e.printStackTrace();
-		}
-		//executor.shutdown();
 
-		//MyArrayUtil.print(array);
-		//System.out.println("mid : "+tmpNoName2+"  right : "+(array.length - 1));
-		//merge(0,pos-1,array.length-1);
-
-		int i = 2;
-		pos = 0;  pos2 = (array.length / threadsNum) * i;
-		while(true){
+			int i = 2;
 			while(true){
-				workers.add(Executors.callable(new MergeSortWorker(pos,pos2)));
-				if(pos2 == array.length) break;
-				pos = pos2 + 1;
-				pos2 = pos2 + i;
-
-				if(pos2 > array.length){
-					pos2 = pos2 - i;
-					workers.add(Executors.callable(new MergeSortWorker(pos,pos2)));
+				workers.clear();
+				pos = 0; pos2 = k * i - 1 ;
+				
+				if(pos2 > array.length - 1){
+					//p("sard if");
+					executor.shutdown();
+					//System.out.print("pos :"+0);
+					//p("pos_1",pos_1,"pos2",(array.length - 1));
+					//MyArrayUtil.print(array);
+					merge(0,pos_1-1,array.length - 1);
+					//p("after");
+					//MyArrayUtil.print(array);
 					break;
 				}
-			}
-			i = i * 2;
-			if(i > threadsNum) break;
-		}
+				
+				while(true){
+					//System.out.println("************ "+(i*k)+"************");
+					//System.out.println("pos : "+pos+"  pos2 : "+pos2);
+					//MyArrayUtil.print(array);
+					workers.add(Executors.callable(new MergeSortWorker(pos,pos2)));
+					if(pos2 == array.length-1) {
+						//p("first if");
+						break;
+					}
+					pos = pos2 + 1;
+					pos_1 = pos;
+					//p("before pos2",pos2);
+					//p("before pos2",pos2,"i",i);
+					
+					pos2 = pos2 + k*i;
+					//p("after pos2",pos2);
+					
+					
+//					p("(array.length - pos)",(array.length - pos),"k * (i / 2))",k * (i / 2));
+					if(pos2 >= array.length){
+						if((array.length - pos) == prevusSave)	{
+							//p("second if");
+							break;  //注 繰り返しソートの防止,確認済み
+						}
 
-		try {
-			executor.invokeAll(workers);
+						
+						//p("pos_2",pos_2,"pos",pos);
+						if(pos_2 == 0){  //最初のあまり分のとき
+						//if(i == 2){
+							//p("first plex");
+							workers.add(Executors.callable(new MergeSortWorker(pos,array.length - 1)));
+							pos_2 = pos;
+						}else{
+							//p("i > 2 plex");
+						workers.add(Executors.callable(new MergeSortWorker(pos,pos_2-1,array.length - 1)));
+						pos_2 = pos;
+						}
+						prevusSave = array.length - pos;
+						break;
+					}
+				}
+				i = i * 2;
+				executor.invokeAll(workers);
+
+				
+			}
+
 		} catch (InterruptedException e) {
 			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
 		}
-		executor.shutdown();
 	}
 
 	class MergeSortWorker implements Runnable{
@@ -84,10 +135,20 @@ public class QuickMergeSort<E extends Comparable> extends QuickSort<E> {
 			mid = (left + right) / 2;
 			buff = new LinkedList<E>();
 		}
+
+		public MergeSortWorker(int left,int mid,int right){
+			this.left = left;
+			this.right = right;
+			this.mid = mid;
+			buff = new LinkedList<E>();
+		}
 		public void run(){
-			int i = left,j = mid + 1,k= 0;
+			int i = left,j = mid + 1;
 
 			while(i <= mid && j <= right) {
+//				MyArrayUtil.print(array, i);
+//				MyArrayUtil.print(array, j);
+				
 				if(array[i].compareTo(array[j]) < 0){
 					buff.add(array[i]); i++;
 				}else{
@@ -97,8 +158,29 @@ public class QuickMergeSort<E extends Comparable> extends QuickSort<E> {
 
 			while(i <= mid) { buff.add(array[i]); i++;}
 			while(j <= right) { buff.add(array[j]); j++;}
-			for(i = left;i <= right; i++){ array[i] = buff.remove(0);}
+			for(i = left;i <= right; i++){array[i] = buff.remove(0);}
+
 		}
+	}
+
+	public void merge(int left,int mid,int right){
+		//buff.clear();  //buff用のリストを初期化しておく.修正
+		LinkedList<E> buff = new LinkedList<E>();
+		int i = left,j = mid + 1;
+
+		while(i <= mid && j <= right) {
+//			MyArrayUtil.print(array, i);
+//			MyArrayUtil.print(array, j);
+			if(array[i].compareTo(array[j]) < 0){
+				buff.add(array[i]); i++;
+			}else{
+				buff.add(array[j]); j++;
+			}
+		}
+
+		while(i <= mid) { buff.add(array[i]); i++;}
+		while(j <= right) { buff.add(array[j]); j++;}
+		for(i = left;i <= right; i++){ array[i] = buff.remove(0);}
 	}
 
 	class QuickSortWorker implements Runnable {
@@ -116,6 +198,4 @@ public class QuickMergeSort<E extends Comparable> extends QuickSort<E> {
 	public synchronized void quickSort(int left,int right){
 		super.quickSort(left, right);
 	}
-
-
 }
