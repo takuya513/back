@@ -48,19 +48,9 @@ public class QuickMergeSort<E extends Comparable> extends QuickSort<E> {
 			executor.invokeAll(workers);
 
 			int expansionSection = 2;
-			while(true){
-				//MyArrayUtil.print(array);
+			pos = 0;pos2 = sectionOfSort * expansionSection - 1 ;
+			while(pos2 <= arrayLength - 1){
 				workers.clear();
-				pos = 0;pos2 = sectionOfSort * expansionSection - 1 ;
-
-				//p("pos2",pos2);
-				//最後のソートの部分
-				if(pos2 > arrayLength - 1){
-					//p("--------");
-					executor.shutdown();
-					merge(0,pivotOfEnd-1,arrayLength - 1,new LinkedList<E>());
-					break;
-				}
 
 				while(true){
 					
@@ -88,10 +78,15 @@ public class QuickMergeSort<E extends Comparable> extends QuickSort<E> {
 						break;
 					}
 				}
+				
+				
 				expansionSection = expansionSection * 2;
 				executor.invokeAll(workers);
+				pos = 0;pos2 = sectionOfSort * expansionSection - 1 ;
 			}
-
+			executor.shutdown();
+			//最後のソートはここで
+			merge(0,pivotOfEnd-1,arrayLength - 1,new LinkedList<E>());
 		} catch (InterruptedException e) {
 			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
@@ -119,7 +114,7 @@ public class QuickMergeSort<E extends Comparable> extends QuickSort<E> {
 		}
 	}
 
-	public synchronized void merge(int left,int mid,int right,LinkedList<E> buff){
+	public  void merge(int left,int mid,int right,LinkedList<E> buff){
 		int i = left,j = mid + 1;
 
 		while(i <= mid && j <= right) {
@@ -147,9 +142,9 @@ public class QuickMergeSort<E extends Comparable> extends QuickSort<E> {
 		}
 	}
 
-	public synchronized void quickSort(int left,int right){
-		super.quickSort(left, right);
-	}
+//	public  void quickSort(int left,int right){
+//		super.quickSort(left, right);
+//	}
 
 
 	public void p(String st,int i,String st2 ,int j){
