@@ -12,21 +12,34 @@ import tools.*;
 
 public class Tester {
 	static Scanner sc;
-
+	static int outCount = 0;
 	public static void main(String args[]) throws InterruptedException {
 		sc = new Scanner(System.in);
 
-		intSorting();
+		sortChecer();
+		//intSorting();
 
 		//doubleSorting();
+	}
+
+	public static void sortChecer(){
+		//int i = 12;
+		long start = System.currentTimeMillis();
+		for(int i = 10;i < 1000;i++)
+			intSortingCheck(i);
+
+		long stop = System.currentTimeMillis();
+		System.out.println("Finish");
+		System.out.println("outCount : "+outCount);
+		System.out.println("Time : "+(stop-start));
 	}
 
 	private static void doubleSorting() {
 
 
-		System.out.println("Input doubleArray length");
-		int length = sc.nextInt();
-
+//		System.out.println("Input doubleArray length");
+		//int length = sc.nextInt();
+		int length  = 1000000;
 
 
 		MyDouble[] doubleArray = new MyDouble[length];
@@ -87,7 +100,7 @@ public class Tester {
 		long start10 = System.currentTimeMillis();
 		qms.sort(doubleArray11);
 		long stop10 = System.currentTimeMillis();
-		
+
 		System.out.println("Normal Quick Sort time   :"+(qsStop - qsStart));
 		System.out.println("Paralle Quick Sort2 time :"+(qs2Stop - qs2Start));
 		System.out.println("Paralle Quick Sort6 time :"+(qs6Stop - qs6Start));
@@ -98,10 +111,45 @@ public class Tester {
 		System.out.println("quickMergeSort time      :"+(stop10 - start10)); //修正
 	}
 
+	public static void intSortingCheck(int t){
+
+		int length = t;
+		
+		MyInteger[] array = new MyInteger[length];
+		int[] data = ArrayUtil.randomIntArray(array.length); //乱数
+
+
+		for(int i = 0;i < array.length;i++)
+			array[i] = new MyInteger(data[i]);
+
+
+		MyInteger[] array10 = Arrays.copyOf(array,array.length);
+
+		Sort<MyInteger> qs6 = new QuickSort6<MyInteger>();
+		Sort<MyInteger> pms = new ParallelMergeSort<MyInteger>();//修正
+		Sort<MyInteger> qms = new QuickMergeSort<MyInteger>();
+
+
+
+		long start10 = System.currentTimeMillis();
+		qms.sort(array10);
+		long stop10 = System.currentTimeMillis();
+		//MyArrayUtil.print(array10);
+		System.out.println("length : "+t);
+		if(!MyArrayUtil.checker(array10)){
+			System.out.println("OUT");
+			outCount++;
+		}
+
+
+	}
+
+
 	public static void intSorting(){
 
 		System.out.println("Input arrays length");
-		int length = sc.nextInt();
+		//int length = sc.nextInt();
+		int length =12;
 //		int length = Integer.MAX_VALUE;
 		System.out.println("Integer "+Integer.MAX_VALUE );
 
@@ -182,7 +230,11 @@ public class Tester {
 		qms.sort(array10);
 		long stop10 = System.currentTimeMillis();
 		MyArrayUtil.print(array10);
-		
+		if(!MyArrayUtil.checker(array10)){
+			System.out.println("False");
+		}
+
+
 		System.out.println("Normal Quick Sort time   :"+(stop - start));
 		System.out.println("Parallel Quick Sort time :"+(stop2 - start2));
 		System.out.println("Parallel Quick Sort6 time:"+(stop6 - start6)); //修正
